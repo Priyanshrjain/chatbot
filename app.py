@@ -1,67 +1,42 @@
 from dotenv import load_dotenv
-load_dotenv()
-
 import streamlit as st
 import os
 import google.generativeai as genai
+
+# Load environment variables
+load_dotenv()
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-# Function to get response (streaming or normal)
-def my_output(query, stream=False):
-    if stream:
-        response = model.generate_content(query, stream=True)
-        full_text = ""
-        for chunk in response:
-            if chunk.text:
-                full_text += chunk.text
-                yield chunk.text  # Stream partial result
-        return
-    else:
-        response = model.generate_content(query)
-        return response.text
-
-# Streamlit App Setup
+# Streamlit page setup
 st.set_page_config(page_title="ChatBot", layout="centered")
 st.title("🤖 ChatBot")
 
-# Initialize session state for chat history
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# Initialize session state to store chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Sidebar with options
-with st.sidebar:
-    st.markdown("⚙️ **Settings**")
-    use_streaming = st.checkbox("Stream Response (Typing Effect)", value=True)
-    if st.button("🗑️ Clear Chat History"):
-        st.session_state.chat_history = []
-        st.experimental_rerun()
+# Display previous messages (like a conversation)
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# Input and button
-user_input = st.text_input("💬 Ask your question:", key="input", placeholder="Type here and press Enter or click the button...")
-submit = st.button("🚀 Ask your query")
+# Chat input box at bottom
+user_input = st.chat_input("💬 Ask me anything...")
 
-# Process user input
-if user_input and (submit or True):
-    st.session_state.chat_history.append(("You", user_input))
+# Handle new input
+if user_input:
+    # Display and save user message
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
-    if use_streaming:
-        response_placeholder = st.empty()
-        full_response = ""
-        for chunk in my_output(user_input, stream=True):
-            full_response += chunk
-            response_placeholder.markdown(f"**🤖 Bot:** {full_response}")
-        st.session_state.chat_history.append(("Bot", full_response))
-    else:
-        response = my_output(user_input)
-        st.session_state.chat_history.append(("Bot", response))
+    # Generate response using Gemini
+    response = model.generate_content(user_input).text
 
-# Show conversation
-st.markdown("---")
-for sender, message in st.session_state.chat_history:
-    if sender == "You":
-        st.markdown(f"**🧑 You:** {message}")
-    else:
-        st.markdown(f"**🤖 Bot:** {message}")
+    # Display and save bot response
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
