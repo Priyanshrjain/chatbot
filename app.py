@@ -2,9 +2,8 @@ from dotenv import load_dotenv
 import streamlit as st
 import os
 import google.generativeai as genai
-# import psycopg2  # 👉 Uncomment when DB is ready
+# import psycopg2  # Uncomment when DB is ready
 # from psycopg2 import sql
-from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -14,21 +13,37 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 # Streamlit page config
-st.set_page_config(page_title="Gemini ChatBot 🤖", page_icon="💬", layout="centered")
+st.set_page_config(page_title="Gemini ChatBot 🤖", page_icon="🤖", layout="centered")
 
-# Custom CSS
+# Custom CSS for better UI
 st.markdown("""
     <style>
-        body { background-color: #f8f9fa; }
-        .stApp { background-color: #ffffff; }
-        .stChatMessage { font-size: 16px; line-height: 1.6; }
-        .chat-input { background-color: #f1f1f1; padding: 1rem; border-radius: 10px; }
+        .chat-container {
+            max-width: 700px;
+            margin: auto;
+        }
+        .chat-box {
+            background-color: #f1f3f6;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .user-msg { background-color: #d0e6ff; }
+        .bot-msg { background-color: #ffffff; }
+        .btn-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+
 st.title("🤖 AI ChatBot with Gemini")
 
-# ========== Database Functions (Commented Out) ==========
+# === Database functions (commented out) ===
 # def connect_db():
 #     return psycopg2.connect(
 #         host=os.getenv("DB_HOST"),
@@ -72,9 +87,7 @@ st.title("🤖 AI ChatBot with Gemini")
 #         cur.close()
 #         conn.close()
 
-# create_table()  # 👉 Only needed when DB is active
-
-# ========== Gemini Chat ==========
+# Function to generate Gemini response
 def get_response(query):
     try:
         response = model.generate_content(query)
@@ -82,36 +95,34 @@ def get_response(query):
     except Exception as e:
         return "⚠️ Gemini API error. Please try again later."
 
-# Session state to maintain messages
+# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Option to clear chat
-if st.button("🧹 Clear Chat History"):
-    st.session_state.messages = []
-    st.rerun()
-
-
-# Display chat history
+# Display messages
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="🧑" if msg["role"] == "user" else "🤖"):
-        st.markdown(msg["content"])
+    role_class = "user-msg" if msg["role"] == "user" else "bot-msg"
+    st.markdown(f"<div class='chat-box {role_class}'><b>{msg['role'].capitalize()}:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
 
-# Input field
-user_input = st.chat_input("💬 Ask me anything...")
+# Input area
+user_input = st.chat_input("Ask something...")
 
 if user_input:
-    st.chat_message("user", avatar="🧑").markdown(user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
-
-    with st.spinner("🤖 Thinking..."):
-        response = get_response(user_input)
-
-    # log_query(user_input, response)  # 👉 Uncomment when DB is ready
-
-    st.chat_message("assistant", avatar="🤖").markdown(response)
+    response = get_response(user_input)
     st.session_state.messages.append({"role": "assistant", "content": response})
 
-# Optional: download chat
-if st.download_button("📥 Download Chat Log", str(st.session_state.messages), file_name="chat_log.txt"):
-    pass
+    # log_query(user_input, response)  # Uncomment when DB is ready
+
+# Buttons aligned bottom right
+st.markdown("<div class='btn-row'>", unsafe_allow_html=True)
+col1, col2 = st.columns([1, 1])
+with col1:
+    if st.button("🧹 Clear Chat"):
+        st.session_state.messages = []
+        st.rerun()
+with col2:
+    st.download_button("📥 Download Chat", str(st.session_state.messages), file_name="chat_log.txt")
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
