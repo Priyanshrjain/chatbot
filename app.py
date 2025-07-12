@@ -2,140 +2,163 @@ from dotenv import load_dotenv
 import streamlit as st
 import os
 import google.generativeai as genai
-# import psycopg2
+# import psycopg2  # Uncomment when connecting database
 # from psycopg2 import sql
+# from datetime import datetime
 
-# Load environment variables
+# Load .env variables
 load_dotenv()
 
-# Configure Gemini
+# Configure Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-# Set Streamlit page config
-st.set_page_config(page_title="AI ChatBot", page_icon="🤖", layout="centered")
+# Uncomment if using PostgreSQL database
+"""
+def connect_db():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        port=os.getenv("DB_PORT")
+    )
 
-# Custom CSS Styling
+def create_table():
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS query_logs (
+                id SERIAL PRIMARY KEY,
+                user_input TEXT,
+                bot_response TEXT,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except:
+        pass  # Can log error
+"""
+
+# Call if using DB
+# create_table()
+
+# Styling
+st.set_page_config(page_title="AskNova - AI Chatbot", layout="centered")
+
 st.markdown("""
     <style>
-        .stApp {
-            background-color: #000000;
+        body, .stApp {
+            background-color: #0e0e0e;
             color: white;
         }
-        .stChatMessage {
-            font-size: 16px;
-            line-height: 1.6;
+
+        .title-container {
+            text-align: center;
+            padding-top: 1rem;
+            padding-bottom: 2rem;
         }
-        .chat-message.user {
+
+        .title-container h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .title-accent {
+            color: #6F1C87;
+        }
+
+        .chat-bubble-user {
             background-color: #6F1C87;
             color: white;
-            border-radius: 8px;
-            padding: 8px;
+            padding: 1rem;
+            border-radius: 0.5rem;
         }
-        .chat-message.assistant {
-            background-color: #2e2e2e;
+
+        .chat-bubble-assistant {
+            background-color: #333;
             color: white;
-            border-radius: 8px;
-            padding: 8px;
+            padding: 1rem;
+            border-radius: 0.5rem;
         }
-        .top-buttons {
-            position: fixed;
-            top: 15px;
-            right: 20px;
-            z-index: 100;
+
+        .top-right-buttons {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
         }
-        .top-buttons button {
+
+        .button-icon {
             background-color: #6F1C87;
+            color: white;
             border: none;
-            border-radius: 8px;
-            padding: 8px 10px;
-            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.4rem;
             cursor: pointer;
-            margin-left: 5px;
+            font-size: 1.2rem;
         }
+
+        .stChatInputContainer {
+            padding-bottom: 2rem;
+        }
+
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>🤖 AI ChatBot with Gemini</h1>", unsafe_allow_html=True)
-
-# Top-right floating buttons
+# Title
 st.markdown("""
-    <div class="top-buttons">
-        <form action="/" method="get" style="display:inline;">
-            <button type="submit">🧹</button>
-        </form>
-        <a download="chat_log.txt" href="data:text/plain;charset=utf-8,{text}" target="_blank">
-            <button>📂</button>
-        </a>
+    <div class="title-container">
+        <h1>
+            <span style="color: white;">Welcome to </span>
+            <span class="title-accent">AskNova</span>
+        </h1>
     </div>
-""".replace("{text}", str(st.session_state.get("messages", "")).replace("\n", "%0A")), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# Optional PostgreSQL functions (commented for now)
-# def connect_db():
-#     return psycopg2.connect(
-#         host=os.getenv("DB_HOST"),
-#         database=os.getenv("DB_NAME"),
-#         user=os.getenv("DB_USER"),
-#         password=os.getenv("DB_PASSWORD"),
-#         port=os.getenv("DB_PORT")
-#     )
-
-# def create_table():
-#     try:
-#         conn = connect_db()
-#         cur = conn.cursor()
-#         cur.execute("""
-#             CREATE TABLE IF NOT EXISTS query_logs (
-#                 id SERIAL PRIMARY KEY,
-#                 user_input TEXT,
-#                 bot_response TEXT,
-#                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-#             );
-#         """)
-#         conn.commit()
-#         cur.close()
-#         conn.close()
-#     except Exception as e:
-#         st.error(f"Database setup error: {e}")
-
-# def log_query(user_input, bot_response):
-#     try:
-#         conn = connect_db()
-#         cur = conn.cursor()
-#         cur.execute("INSERT INTO query_logs (user_input, bot_response) VALUES (%s, %s);", (user_input, bot_response))
-#         conn.commit()
-#         cur.close()
-#         conn.close()
-#     except Exception as e:
-#         st.warning("Could not log to database.")
-
-# def get_response
-
-def get_response(query):
-    try:
-        with st.spinner("🤖 Gemini is thinking..."):
-            response = model.generate_content(query)
-            return response.text
-    except Exception as e:
-        return "⚠️ Gemini API error. Please try again later."
-
-# Initialize session
+# State
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
+# Top-right buttons
+col1, col2 = st.columns([10, 1])
+with col2:
+    clear = st.button("🧹", help="Clear Chat")
+    download = st.download_button("💾", str(st.session_state.messages), file_name="asknova_chat_log.txt", help="Download Chat")
+
+if clear:
+    st.session_state.messages = []
+    st.rerun()
+
+# Chat history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    bubble_class = "chat-bubble-user" if msg["role"] == "user" else "chat-bubble-assistant"
+    st.markdown(f"""<div class="{bubble_class}">{msg["content"]}</div>""", unsafe_allow_html=True)
 
-# Chat input
+# Input
 user_input = st.chat_input("Ask something...")
+
+def get_response(prompt):
+    try:
+        res = model.generate_content(prompt)
+        return res.text
+    except:
+        return "⚠️ Sorry, something went wrong."
+
 if user_input:
-    st.chat_message("user").markdown(user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
+    st.markdown(f"""<div class="chat-bubble-user">{user_input}</div>""", unsafe_allow_html=True)
 
-    response = get_response(user_input)
-    # log_query(user_input, response)  # DB logging (optional)
+    with st.spinner("⏳ Fetching response..."):
+        response = get_response(user_input)
 
-    st.chat_message("assistant").markdown(response)
+    # Log to DB (uncomment if needed)
+    # log_query(user_input, response)
+
     st.session_state.messages.append({"role": "assistant", "content": response})
+    st.markdown(f"""<div class="chat-bubble-assistant">{response}</div>""", unsafe_allow_html=True)
