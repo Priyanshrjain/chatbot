@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 import streamlit as st
 import os
 import google.generativeai as genai
-# import psycopg2  # ⛔ Unused for now
+# import psycopg2  # 👉 Uncomment when DB is ready
 # from psycopg2 import sql
-# from datetime import datetime
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -14,22 +14,21 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 # Streamlit page config
-st.set_page_config(page_title="AI Assistant 🤖", page_icon="💬", layout="centered")
+st.set_page_config(page_title="Gemini ChatBot 🤖", page_icon="💬", layout="centered")
 
-# Custom styling
+# Custom CSS
 st.markdown("""
     <style>
+        body { background-color: #f8f9fa; }
+        .stApp { background-color: #ffffff; }
         .stChatMessage { font-size: 16px; line-height: 1.6; }
-        .stApp { background-color: #f7f9fb; }
-        .css-18e3th9 { padding: 1.5rem; }
+        .chat-input { background-color: #f1f1f1; padding: 1rem; border-radius: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🤖 AI ChatBot with Gemini")
 
-# --------------------------- DB FUNCTIONS (DISABLED) ---------------------------
-
-# # DB Connection
+# ========== Database Functions (Commented Out) ==========
 # def connect_db():
 #     return psycopg2.connect(
 #         host=os.getenv("DB_HOST"),
@@ -39,7 +38,6 @@ st.title("🤖 AI ChatBot with Gemini")
 #         port=os.getenv("DB_PORT")
 #     )
 
-# # Ensure table exists
 # def create_table():
 #     try:
 #         conn = connect_db()
@@ -59,7 +57,6 @@ st.title("🤖 AI ChatBot with Gemini")
 #         cur.close()
 #         conn.close()
 
-# # Log chats to DB
 # def log_query(user_input, bot_response):
 #     try:
 #         conn = connect_db()
@@ -75,9 +72,9 @@ st.title("🤖 AI ChatBot with Gemini")
 #         cur.close()
 #         conn.close()
 
-# ------------------------------------------------------------------------------
+# create_table()  # 👉 Only needed when DB is active
 
-# Get Gemini response
+# ========== Gemini Chat ==========
 def get_response(query):
     try:
         response = model.generate_content(query)
@@ -85,10 +82,7 @@ def get_response(query):
     except Exception as e:
         return "⚠️ Gemini API error. Please try again later."
 
-# # Call to create DB table (disabled)
-# create_table()
-
-# Session state for chat history
+# Session state to maintain messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -105,16 +99,14 @@ for msg in st.session_state.messages:
 # Input field
 user_input = st.chat_input("💬 Ask me anything...")
 
-# Handle user query
-if user_input and user_input.strip():
-    st.chat_message("user", avatar="🧑").markdown(f"**{user_input.strip()}**")
-    st.session_state.messages.append({"role": "user", "content": user_input.strip()})
+if user_input:
+    st.chat_message("user", avatar="🧑").markdown(user_input)
+    st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.spinner("🤔 Thinking..."):
-        response = get_response(user_input.strip())
+    with st.spinner("🤖 Thinking..."):
+        response = get_response(user_input)
 
-    # # Log query (disabled for now)
-    # log_query(user_input.strip(), response)
+    # log_query(user_input, response)  # 👉 Uncomment when DB is ready
 
     st.chat_message("assistant", avatar="🤖").markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
