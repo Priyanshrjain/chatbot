@@ -28,23 +28,22 @@ def create_table():
     try:
         conn = connect_db()
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(
+            '''
             CREATE TABLE IF NOT EXISTS query_logs (
                 id SERIAL PRIMARY KEY,
                 user_input TEXT,
                 bot_response TEXT,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             );
-        """)
+            '''
+        )
         conn.commit()
         cur.close()
         conn.close()
-    except:
-        pass  # Can log error
+    except Exception as e:
+        print(f"Database error: {e}")
 """
-
-# Call if using DB
-# create_table()
 
 # Styling
 st.set_page_config(page_title="AskNova - AI Chatbot", layout="centered")
@@ -77,6 +76,7 @@ st.markdown("""
             color: white;
             padding: 1rem;
             border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .chat-bubble-assistant {
@@ -84,30 +84,12 @@ st.markdown("""
             color: white;
             padding: 1rem;
             border-radius: 0.5rem;
-        }
-
-        .top-right-buttons {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .button-icon {
-            background-color: #6F1C87;
-            color: white;
-            border: none;
-            padding: 0.4rem 0.6rem;
-            border-radius: 0.4rem;
-            cursor: pointer;
-            font-size: 1.2rem;
+            margin-bottom: 1rem;
         }
 
         .stChatInputContainer {
             padding-bottom: 2rem;
         }
-
     </style>
 """, unsafe_allow_html=True)
 
