@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 import streamlit as st
 import os
 import google.generativeai as genai
-import psycopg2
-from psycopg2 import sql
-from datetime import datetime
+# import psycopg2  # ⛔ Unused for now
+# from psycopg2 import sql
+# from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -25,53 +25,57 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 AI ChatBot with Gemini + PostgreSQL Logging")
+st.title("🤖 AI ChatBot with Gemini")
 
-# DB Connection
-def connect_db():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
+# --------------------------- DB FUNCTIONS (DISABLED) ---------------------------
 
-# Ensure table exists
-def create_table():
-    try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS query_logs (
-                id SERIAL PRIMARY KEY,
-                user_input TEXT,
-                bot_response TEXT,
-                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        conn.commit()
-    except Exception as e:
-        st.error(f"❌ Database setup failed: {e}")
-    finally:
-        cur.close()
-        conn.close()
+# # DB Connection
+# def connect_db():
+#     return psycopg2.connect(
+#         host=os.getenv("DB_HOST"),
+#         database=os.getenv("DB_NAME"),
+#         user=os.getenv("DB_USER"),
+#         password=os.getenv("DB_PASSWORD"),
+#         port=os.getenv("DB_PORT")
+#     )
 
-# Log chats to DB
-def log_query(user_input, bot_response):
-    try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO query_logs (user_input, bot_response) VALUES (%s, %s);",
-            (user_input, bot_response)
-        )
-        conn.commit()
-    except Exception as e:
-        st.warning("⚠️ Could not log to database.")
-    finally:
-        cur.close()
-        conn.close()
+# # Ensure table exists
+# def create_table():
+#     try:
+#         conn = connect_db()
+#         cur = conn.cursor()
+#         cur.execute("""
+#             CREATE TABLE IF NOT EXISTS query_logs (
+#                 id SERIAL PRIMARY KEY,
+#                 user_input TEXT,
+#                 bot_response TEXT,
+#                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+#             );
+#         """)
+#         conn.commit()
+#     except Exception as e:
+#         st.error(f"❌ Database setup failed: {e}")
+#     finally:
+#         cur.close()
+#         conn.close()
+
+# # Log chats to DB
+# def log_query(user_input, bot_response):
+#     try:
+#         conn = connect_db()
+#         cur = conn.cursor()
+#         cur.execute(
+#             "INSERT INTO query_logs (user_input, bot_response) VALUES (%s, %s);",
+#             (user_input, bot_response)
+#         )
+#         conn.commit()
+#     except Exception as e:
+#         st.warning("⚠️ Could not log to database.")
+#     finally:
+#         cur.close()
+#         conn.close()
+
+# ------------------------------------------------------------------------------
 
 # Get Gemini response
 def get_response(query):
@@ -81,8 +85,8 @@ def get_response(query):
     except Exception as e:
         return "⚠️ Gemini API error. Please try again later."
 
-# Call to create DB table
-create_table()
+# # Call to create DB table (disabled)
+# create_table()
 
 # Session state for chat history
 if "messages" not in st.session_state:
@@ -109,7 +113,8 @@ if user_input and user_input.strip():
     with st.spinner("🤔 Thinking..."):
         response = get_response(user_input.strip())
 
-    log_query(user_input.strip(), response)
+    # # Log query (disabled for now)
+    # log_query(user_input.strip(), response)
 
     st.chat_message("assistant", avatar="🤖").markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
