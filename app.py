@@ -44,52 +44,66 @@ h1 {
     padding: 1.5rem;
 }
 header, footer {visibility: hidden;}
-
-.custom-button-container {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    display: flex;
-    gap: 0.5rem;
-}
-.icon-button {
-    background-color: #8F00FF;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    padding: 0.4rem 0.5rem;
-    cursor: pointer;
-    font-size: 1rem;
-}
 </style>
 """, unsafe_allow_html=True)
 
 # Title
 st.markdown("<h1>Welcome to <span style='color:#8F00FF;'>AskNova</span></h1>", unsafe_allow_html=True)
 
-# Clear Chat Button (top right)
-with st.container():
-    st.markdown("""
-    <div class="custom-button-container">
-        <form action="" method="post">
-            <button class="icon-button" name="clear" type="submit">🪄</button>
-        </form>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.session_state.get("clear"):
-        st.session_state.messages = []
+# -------------------------------
+# Uncomment and use below for database support
+# import psycopg2
+# def connect_db():
+#     return psycopg2.connect(
+#         host=os.getenv("DB_HOST"),
+#         database=os.getenv("DB_NAME"),
+#         user=os.getenv("DB_USER"),
+#         password=os.getenv("DB_PASSWORD"),
+#         port=os.getenv("DB_PORT")
+#     )
+
+# def create_table():
+#     try:
+#         conn = connect_db()
+#         cur = conn.cursor()
+#         cur.execute('''CREATE TABLE IF NOT EXISTS query_logs (
+#             id SERIAL PRIMARY KEY,
+#             user_input TEXT,
+#             bot_response TEXT,
+#             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+#         );''')
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+#     except Exception as e:
+#         print(f"Database error: {e}")
+
+# def log_query(user_input, bot_response):
+#     try:
+#         conn = connect_db()
+#         cur = conn.cursor()
+#         cur.execute(
+#             "INSERT INTO query_logs (user_input, bot_response) VALUES (%s, %s);",
+#             (user_input, bot_response)
+#         )
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+#     except:
+#         pass
+# -------------------------------
 
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display previous messages
+# Display chat history
 for msg in st.session_state.messages:
     role = msg["role"]
     content = msg["content"]
     st.chat_message(role).markdown(content)
 
-# Input field
+# Chat input
 user_input = st.chat_input("Ask something...")
 
 if user_input:
@@ -105,3 +119,5 @@ if user_input:
 
     st.chat_message("assistant").markdown(reply)
     st.session_state.messages.append({"role": "assistant", "content": reply})
+
+    # log_query(user_input, reply)  # Uncomment when database is connected
